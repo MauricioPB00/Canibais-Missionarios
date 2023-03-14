@@ -1,0 +1,116 @@
+class State {
+  constructor(m, c, b, nodo) {
+    this.m = m; // número missionários  lado esquerdo
+    this.c = c; // número canibais  lado esquerdo
+    this.b = b; 
+    this.nodo = nodo; // pai
+    this.custo = 1 + (nodo ? nodo.custo : 0); // custo do caminho até este estado
+  }
+
+  // verifica se o estado atual é válido
+  verificar() {
+    if (this.m < 0 || this.m > 3 || this.c < 0 || this.c > 3) {
+      return false;
+    }
+    if (this.m > 0 && this.m < this.c) {
+      return false;
+    }
+    if (3 - this.m > 0 && 3 - this.m < 3 - this.c) {
+      return false;
+    }
+    return true;
+  }
+
+
+   // verifica se o estado atual é o objetivo
+  final() {
+    return this.m === 0 && this.c === 0 && this.b === 0;
+  }
+
+
+ // retorna todos os sucessores possíveis do estado atual
+ sucessores() {
+    const sucessores = [];
+    if (this.b === 1) { // barco está no lado esquerdo
+      for (let i = 0; i <= 2; i++) {
+        for (let j = 0; j <= 2; j++) {
+          if (i + j >= 1 && i + j <= 2) { // o barco pode transportar apenas 1 ou 2 pessoas
+            const aux = new State(this.m - i, this.c - j, 0, this);
+            if (aux.verificar()) {
+              sucessores.push(aux);
+            }
+          }
+        }
+      }
+    } else { // barco está no lado direito
+      for (let i = 0; i <= 2; i++) {
+        for (let j = 0; j <= 2; j++) {
+          if (i + j >= 1 && i + j <= 2) { // o barco pode transportar apenas 1 ou 2 pessoas
+            const aux = new State(this.m + i, this.c + j, 1, this);
+            if (aux.verificar()) {
+              sucessores.push(aux);
+            }
+          }
+        }
+      }
+    }
+    return sucessores;
+  }
+
+
+
+ // retorna o valor da heurística do estado atual
+  heuristica() {
+    return this.m + this.c;
+  }
+}
+
+
+function buscaA(start) {
+  const open = [start];
+  const closed = new Set();
+  while (open.length > 0) {
+    let atual = open[0];
+    for (let i = 1; i < open.length; i++) {
+      if (open[i].custo + open[i].heuristica() < atual.custo + atual.heuristica()) {
+        atual = open[i];
+      }
+    }
+    open.splice(open.indexOf(atual), 1);
+    closed.add(atual);
+    if (atual.final()) {
+      const path = [atual];
+      while (atual.nodo) {
+        path.push(atual.nodo); 
+        atual = atual.nodo;
+      }
+      return path.reverse();
+    }
+    const sucessores = atual.sucessores();
+    for (const successor of sucessores) {
+      if (closed.has(successor)) {
+        continue;
+      }
+      const index = open.indexOf(successor);
+      if (index === -1) {
+        open.push(successor);
+      } else if (open[index].custo > successor.custo) {
+        open[index] = successor;
+      }
+    }
+  }
+  return null;
+}
+
+
+
+const initialState = new State(3, 3, 1, null);
+const solucao = buscaA(initialState);
+//console.log('1',solucao)
+if (solucao === null) {
+  console.log("Não foi possível encontrar uma solução.");
+} else {
+  for (const state of solucao) {
+    console.log(`M: ${state.m}, C: ${state.c}, B: ${state.b}`);
+  }
+} 
